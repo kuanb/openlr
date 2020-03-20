@@ -85,6 +85,37 @@
                     }
                 });
 
+                const geojsonstart = {
+                    'type': 'Feature',
+                    'properties': {},
+                    'geometry': {
+                        'type': 'Point',
+                        'coordinates': coords[0],
+                    },
+                }
+
+                if (map.getSource("start")) {
+                    map.removeSource("start");
+                }
+
+                if (map.getLayer("start")) {
+                    map.removeLayer("start");
+                }
+
+                map.addSource('start', {
+                    'type': 'geojson',
+                    'data': geojsonstart,
+                });
+                map.addLayer({
+                    'id': 'start',
+                    'type': 'circle',
+                    'source': 'start',
+                    'paint': {
+                        'circle-radius': 10,
+                        'circle-color': 'purple',
+                    }
+                });
+
                 const coordinates = geojson.geometry.coordinates;
                 console.log('coordinates', coordinates);
                 const bounds = coordinates.reduce((bounds, coord) => {
