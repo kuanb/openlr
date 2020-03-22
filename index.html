@@ -17,8 +17,24 @@
         body { margin: 0; padding: 0; }
         #map { position: absolute; top: 0; bottom: 0; width: 100%; }
         #form { position: absolute; top: 15px; left: 15px; z-index: 1; }
-        #form input { width: 200px; }
-        #header { position: absolute; top: 15px; right: 15px; z-index: 1; background-color: white; }
+        #header {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            z-index: 1;
+            width: 300px;
+            height: 50px;
+            background-image: url('https://raw.githubusercontent.com/d3/d3-scale-chromatic/master/img/cool.png');
+            background-repeat: no-repeat;
+            background-size: 300px 50px;
+        }
+        #header p {
+            font-family: Helvetica, Arial, Sans-Serif;
+            text-shadow: 0px 0px 4px #000;
+            color: white;
+            padding-left: 20px;
+            padding-right: 20px;
+        }
         .mapboxgl-popup {
             max-width: 200px;
         }
@@ -38,12 +54,17 @@
     </div>
 
     <div id="map"></div>
-    <div id="header">Purple is start node</div>
+    <div id="header">
+        <p style="float: left;">Start</p>
+        <p style="float: right;">End</p>
+    </div>
 
 </body>
 
 <script src="https://api.mapbox.com/mapbox-gl-js/v1.8.0/mapbox-gl.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/openlr-js@latest/lib/browser/bundle.min.js"></script>
+<script src='https://npmcdn.com/@turf/turf/turf.min.js'></script>
+<script src="https://d3js.org/d3.v5.js"></script>
 
 <script type="text/javascript">
     mapboxgl.accessToken = 'pk.eyJ1Ijoia3VhbmIiLCJhIjoidXdWUVZ2USJ9.qNKXXP6z9_fKA8qrmpOi6Q';
@@ -54,6 +75,7 @@
         zoom: 1 // starting zoom
     });
 
+    // Example OpenLRs
     // CwNhbCU+jzPLAwD0/34zGw==
     // CwUVTSRzcRNIBQHJ/9MUfAAA
     // C/8G3CcQkht4FPrF/kAbbgv9G/66G2MbAA==
@@ -71,13 +93,44 @@
             const coordsAndBearings = jsonObject.properties._points.properties.map(
                 x => [x.properties._longitude, x.properties._latitude, x.properties._bearing]);
             const coords = coordsAndBearings.map(cab => [cab[0], cab[1]]);
+
+            const line = turf.lineString(coords);
+            const lineLength = turf.length(line, {units: 'meters'});
+
+            const totalSubSegments = 200;
+            const subSegmentLength = Math.round(lineLength/totalSubSegments);
+
+            const subdividedCoords = [];
+            for (let i = 0; i < totalSubSegments + 1; i++) {
+                subdividedCoords.push(
+                    turf.along(line, i * subSegmentLength, {units: 'meters'}).geometry.coordinates);
+            }
+
+            const coordPairs = [];
+            for (let i = 0; i < subdividedCoords.length - 1; i++) {
+                if (i < subdividedCoords.length - 1) {
+                    coordPairs.push([
+                        subdividedCoords[i],
+                        subdividedCoords[i + 1]
+                    ]);
+                }
+            }
+
             const geojson = {
-                'type': 'Feature',
-                'properties': {},
-                'geometry': {
-                    'type': 'LineString',
-                    'coordinates': coords,
-                },
+                'type': 'FeatureCollection',
+                'features': coordPairs.map((cp, i) => {
+                    return {
+                        'type': 'Feature',
+                        'properties': {
+                            'color': d3.interpolateCool(i/totalSubSegments),
+                        },
+                        'geometry': {
+                            'type': 'LineString',
+                            'coordinates': cp,
+                        },
+                    }
+
+                }),
             }
 
             if (map.getLayer("route")) {
@@ -101,15 +154,24 @@
                     'line-cap': 'round'
                 },
                 'paint': {
-                    'line-color': '#000',
+                    'line-color': ['get', 'color'],
                     'line-width': 8
                 }
             });
 
+            // remove markers from map if any exist
+            [...Array(360).keys()].map(i => {
+                const elements = document.getElementsByClassName(`arrowmarker${i}`);
+                if (elements.length) {
+                    for (let i = 0; i < elements.length; i++) {
+                        elements[i].remove();
+                    }
+                }
+            })
+
             // add markers to map
             coordsAndBearings.forEach((cab, cabI) => {
                 const markerLoc = [cab[0], cab[1]];
-                console.log(markerLoc)
                 const bearingRaw = cab[2];
                 const bearing = Math.round(bearingRaw);
 
@@ -126,10 +188,9 @@
                     .addTo(map);
             });
 
-            const coordinates = geojson.geometry.coordinates;
-            const bounds = coordinates.reduce((bounds, coord) => {
+            const bounds = coords.reduce((bounds, coord) => {
                 return bounds.extend(coord);
-            }, new mapboxgl.LngLatBounds(coordinates[0], coordinates[0]));
+            }, new mapboxgl.LngLatBounds(coords[0], coords[0]));
              
             map.fitBounds(bounds, { padding: 100 });
 
