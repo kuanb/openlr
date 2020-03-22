@@ -14,9 +14,29 @@
       rel="stylesheet"
     />
     <style>
-        body { margin: 0; padding: 0; }
-        #map { position: absolute; top: 0; bottom: 0; width: 100%; }
-        #form { position: absolute; top: 15px; left: 15px; z-index: 1; }
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Open Sans', sans-serif;
+        }
+        #map {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 100%;
+        }
+        #form {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            z-index: 1;
+            background-color: white;
+            border: 10px solid white;
+            border-radius: 10px;
+        }
+        #form input {
+            width: 250px;
+        }
         #header {
             position: absolute;
             top: 15px;
@@ -40,7 +60,34 @@
         }
         .mapboxgl-popup-content {
             text-align: center;
-            font-family: 'Open Sans', sans-serif;
+        }
+        #snackbar {
+            visibility: hidden; /* Hidden by default. Visible on click */
+            min-width: 250px;
+            margin-left: -125px; /* Divide value of min-width by 2 */
+            background-color: #B30000;
+            color: #fff;
+            text-align: center;
+            border-radius: 2px;
+            padding: 16px;
+            position: fixed;
+            left: 50%;
+            bottom: 30px;
+        }
+
+        #snackbar.show {
+            visibility: visible;
+            animation: fadein 0.5s, fadeout 0.3s 1.7s;
+        }
+
+        @keyframes fadein {
+            from {bottom: 0; opacity: 0;}
+            to {bottom: 30px; opacity: 1;}
+        }
+
+        @keyframes fadeout {
+            from {bottom: 30px; opacity: 1;}
+            to {bottom: 0; opacity: 0;}
         }
     </style>
 
@@ -58,6 +105,8 @@
         <p style="float: left;">Start</p>
         <p style="float: right;">End</p>
     </div>
+
+    <div id='snackbar'>Failed to parse OpenLR.</div>
 
 </body>
 
@@ -196,8 +245,15 @@
 
         } catch(error) {
             console.log(error);
+            showSnackbar();
         }
 
+    }
+
+    function showSnackbar() {
+        var x = document.getElementById('snackbar');
+        x.className = 'show';
+        setTimeout(function(){ x.className = x.className.replace('show', ''); }, 2000);
     }
 </script>
 
