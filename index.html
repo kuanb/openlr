@@ -8,12 +8,24 @@
     <meta name="description" content="OpenLR">
     <meta name="author" content="kuanbutts">
 
+    <link rel="stylesheet" href="arrowstyle.css">
+    <link
+      href="https://api.tiles.mapbox.com/mapbox-gl-js/v1.8.1/mapbox-gl.css"
+      rel="stylesheet"
+    />
     <style>
         body { margin: 0; padding: 0; }
         #map { position: absolute; top: 0; bottom: 0; width: 100%; }
         #form { position: absolute; top: 15px; left: 15px; z-index: 1; }
         #form input { width: 200px; }
         #header { position: absolute; top: 15px; right: 15px; z-index: 1; background-color: white; }
+        .mapboxgl-popup {
+            max-width: 200px;
+        }
+        .mapboxgl-popup-content {
+            text-align: center;
+            font-family: 'Open Sans', sans-serif;
+        }
     </style>
 
 </head>
@@ -28,116 +40,104 @@
     <div id="map"></div>
     <div id="header">Purple is start node</div>
 
-    <script src="https://api.mapbox.com/mapbox-gl-js/v1.8.0/mapbox-gl.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/openlr-js@latest/lib/browser/bundle.min.js"></script>
+</body>
 
-    <script type="text/javascript">
-        mapboxgl.accessToken = 'pk.eyJ1Ijoia3VhbmIiLCJhIjoidXdWUVZ2USJ9.qNKXXP6z9_fKA8qrmpOi6Q';
-        var map = new mapboxgl.Map({
-            container: 'map', // container id
-            style: 'mapbox://styles/mapbox/streets-v11', // stylesheet location
-            center: [-74.5, 40], // starting position [lng, lat]
-            zoom: 1 // starting zoom
-        });
+<script src="https://api.mapbox.com/mapbox-gl-js/v1.8.0/mapbox-gl.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/openlr-js@latest/lib/browser/bundle.min.js"></script>
 
-        // CwNhbCU+jzPLAwD0/34zGw==
-        // CD0BEAA5OP8G3CcQkgAJBQQDA8AACgUEA4kdAP0b/roACQUEAwMaAHAB+sX+QAAJBQQDA3YACgUEA4U5ABsA
-        // CCoBEAAmJf4A3yg78wAJBQQDA4AACgUEA4pkAPvB+/UACQUEAwMaADAAikg=
-        // CD0BEAA5OP3kASjDJgAJBQQDA80ACgUEA/Q2APvUDEoACQUEAwN3AHABzHwiNAAJBQQDAwUACgUEA50TAAAA
-        // CD0BEAA5OP8G3CcQkgAJBQQDA8AACgUEA4kdAP0b/roACQUEAwMaAHAB+sX+QAAJBQQDA3YACgUEA4U5ABsA
+<script type="text/javascript">
+    mapboxgl.accessToken = 'pk.eyJ1Ijoia3VhbmIiLCJhIjoidXdWUVZ2USJ9.qNKXXP6z9_fKA8qrmpOi6Q';
+    var map = new mapboxgl.Map({
+        container: 'map', // container id
+        style: 'mapbox://styles/mapbox/streets-v11', // stylesheet location
+        center: [-74.5, 40], // starting position [lng, lat]
+        zoom: 1 // starting zoom
+    });
 
-        function process() {
-            try {
-                const binaryDecoder = new OpenLR.BinaryDecoder();
+    // CwNhbCU+jzPLAwD0/34zGw==
+    // CwUVTSRzcRNIBQHJ/9MUfAAA
+    // C/8G3CcQkht4FPrF/kAbbgv9G/66G2MbAA==
 
-                const openLrString = document.getElementById('openlrInput').value;
-                const openLrBinary = OpenLR.Buffer.from(openLrString, 'base64');
-                const locationReference = OpenLR.LocationReference.fromIdAndBuffer('binary', openLrBinary);
-                const rawLocationReference = binaryDecoder.decodeData(locationReference);
-                const jsonObject = OpenLR.Serializer.serialize(rawLocationReference);
+    function process() {
+        try {
+            const binaryDecoder = new OpenLR.BinaryDecoder();
 
-                const coords = jsonObject.properties._points.properties.map(x => [x.properties._longitude, x.properties._latitude]);
-                const geojson = {
-                    'type': 'Feature',
-                    'properties': {},
-                    'geometry': {
-                        'type': 'LineString',
-                        'coordinates': coords,
-                    },
-                }
+            const openLrString = document.getElementById('openlrInput').value;
+            const openLrBinary = OpenLR.Buffer.from(openLrString, 'base64');
+            const locationReference = OpenLR.LocationReference.fromIdAndBuffer('binary', openLrBinary);
+            const rawLocationReference = binaryDecoder.decodeData(locationReference);
+            const jsonObject = OpenLR.Serializer.serialize(rawLocationReference);
 
-                if (map.getLayer("route")) {
-                    map.removeLayer("route");
-                }
-
-                if (map.getSource("route")) {
-                    map.removeSource("route");
-                }
-
-                map.addSource('route', {
-                    'type': 'geojson',
-                    'data': geojson,
-                });
-                map.addLayer({
-                    'id': 'route',
-                    'type': 'line',
-                    'source': 'route',
-                    'layout': {
-                        'line-join': 'round',
-                        'line-cap': 'round'
-                    },
-                    'paint': {
-                        'line-color': '#FF0000',
-                        'line-width': 8
-                    }
-                });
-
-                const geojsonstart = {
-                    'type': 'Feature',
-                    'properties': {},
-                    'geometry': {
-                        'type': 'Point',
-                        'coordinates': coords[0],
-                    },
-                }
-
-                if (map.getLayer("start")) {
-                    map.removeLayer("start");
-                }
-
-                if (map.getSource("start")) {
-                    map.removeSource("start");
-                }
-
-                map.addSource('start', {
-                    'type': 'geojson',
-                    'data': geojsonstart,
-                });
-                map.addLayer({
-                    'id': 'start',
-                    'type': 'circle',
-                    'source': 'start',
-                    'paint': {
-                        'circle-radius': 10,
-                        'circle-color': 'purple',
-                    }
-                });
-
-                const coordinates = geojson.geometry.coordinates;
-                console.log('coordinates', coordinates);
-                const bounds = coordinates.reduce((bounds, coord) => {
-                    return bounds.extend(coord);
-                }, new mapboxgl.LngLatBounds(coordinates[0], coordinates[0]));
-                 
-                map.fitBounds(bounds, { padding: 100 });
-
-            } catch(error) {
-                console.log(error);
+            const coordsAndBearings = jsonObject.properties._points.properties.map(
+                x => [x.properties._longitude, x.properties._latitude, x.properties._bearing]);
+            const coords = coordsAndBearings.map(cab => [cab[0], cab[1]]);
+            const geojson = {
+                'type': 'Feature',
+                'properties': {},
+                'geometry': {
+                    'type': 'LineString',
+                    'coordinates': coords,
+                },
             }
 
-        }
-    </script>
+            if (map.getLayer("route")) {
+                map.removeLayer("route");
+            }
 
-</body>
+            if (map.getSource("route")) {
+                map.removeSource("route");
+            }
+
+            map.addSource('route', {
+                'type': 'geojson',
+                'data': geojson,
+            });
+            map.addLayer({
+                'id': 'route',
+                'type': 'line',
+                'source': 'route',
+                'layout': {
+                    'line-join': 'round',
+                    'line-cap': 'round'
+                },
+                'paint': {
+                    'line-color': '#000',
+                    'line-width': 8
+                }
+            });
+
+            // add markers to map
+            coordsAndBearings.forEach(cab => {
+                const markerLoc = [cab[0], cab[1]];
+                console.log(markerLoc)
+                const bearingRaw = cab[2];
+                const bearing = Math.round(bearingRaw);
+
+                const el = document.createElement('div');
+                el.className = `arrowmarker${bearing}`;
+
+                // make a marker for each feature and add to the map
+                new mapboxgl.Marker(el)
+                    .setLngLat(markerLoc)
+                    .setPopup(
+                        new mapboxgl.Popup({ offset: 25 })
+                            .setHTML(`<h3>Bearing:</h3><p>${bearingRaw}</p>`)
+                    )
+                    .addTo(map);
+            });
+
+            const coordinates = geojson.geometry.coordinates;
+            const bounds = coordinates.reduce((bounds, coord) => {
+                return bounds.extend(coord);
+            }, new mapboxgl.LngLatBounds(coordinates[0], coordinates[0]));
+             
+            map.fitBounds(bounds, { padding: 100 });
+
+        } catch(error) {
+            console.log(error);
+        }
+
+    }
+</script>
 
 </html>
