@@ -107,7 +107,7 @@
             });
 
             // add markers to map
-            coordsAndBearings.forEach(cab => {
+            coordsAndBearings.forEach((cab, cabI) => {
                 const markerLoc = [cab[0], cab[1]];
                 console.log(markerLoc)
                 const bearingRaw = cab[2];
@@ -121,7 +121,7 @@
                     .setLngLat(markerLoc)
                     .setPopup(
                         new mapboxgl.Popup({ offset: 25 })
-                            .setHTML(`<h3>Bearing:</h3><p>${bearingRaw}</p>`)
+                            .setHTML(`<h3>LRP #${cabI + 1} Bearing:</h3><p>${bearingRaw}</p>`)
                     )
                     .addTo(map);
             });
