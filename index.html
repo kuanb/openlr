@@ -12,6 +12,7 @@
         body { margin: 0; padding: 0; }
         #map { position: absolute; top: 0; bottom: 0; width: 100%; }
         #form { position: absolute; top: 15px; left: 15px; z-index: 1; }
+        #form input { width: 200px; }
         #header { position: absolute; top: 15px; right: 15px; z-index: 1; background-color: white; }
     </style>
 
@@ -19,10 +20,10 @@
 
 <body>
 
-    <form id="form" onsubmit="return process(event)">
-        <input type="text" id="openlrInput" name="openlrInput" value="CwNhbCU+jzPLAwD0/34zGw==">
-        <input type="submit" value="Submit">
-    </form>
+    <div id="form">
+        <input type="text" id="openlrInput" name="openlrInput" placeholder="openlr string  here"></input>
+        <button type="submit" onclick="process()">Submit</button>
+    </div>
 
     <div id="map"></div>
     <div id="header">Purple is start node</div>
@@ -39,9 +40,13 @@
             zoom: 1 // starting zoom
         });
 
-        function process(event) {
-            event.preventDefault();
+        // CwNhbCU+jzPLAwD0/34zGw==
+        // CD0BEAA5OP8G3CcQkgAJBQQDA8AACgUEA4kdAP0b/roACQUEAwMaAHAB+sX+QAAJBQQDA3YACgUEA4U5ABsA
+        // CCoBEAAmJf4A3yg78wAJBQQDA4AACgUEA4pkAPvB+/UACQUEAwMaADAAikg=
+        // CD0BEAA5OP3kASjDJgAJBQQDA80ACgUEA/Q2APvUDEoACQUEAwN3AHABzHwiNAAJBQQDAwUACgUEA50TAAAA
+        // CD0BEAA5OP8G3CcQkgAJBQQDA8AACgUEA4kdAP0b/roACQUEAwMaAHAB+sX+QAAJBQQDA3YACgUEA4U5ABsA
 
+        function process() {
             try {
                 const binaryDecoder = new OpenLR.BinaryDecoder();
 
@@ -61,12 +66,12 @@
                     },
                 }
 
-                if (map.getSource("route")) {
-                    map.removeSource("route");
-                }
-
                 if (map.getLayer("route")) {
                     map.removeLayer("route");
+                }
+
+                if (map.getSource("route")) {
+                    map.removeSource("route");
                 }
 
                 map.addSource('route', {
@@ -96,12 +101,12 @@
                     },
                 }
 
-                if (map.getSource("start")) {
-                    map.removeSource("start");
-                }
-
                 if (map.getLayer("start")) {
                     map.removeLayer("start");
+                }
+
+                if (map.getSource("start")) {
+                    map.removeSource("start");
                 }
 
                 map.addSource('start', {
