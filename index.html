@@ -128,6 +128,7 @@
     // Example OpenLRs
     // CwNhbCU+jzPLAwD0/34zGw==
     // CwUVTSRzcRNIBQHJ/9MUfAAA
+    // CxRySyt/9SujAAA/AB4rFA==
     // C/8G3CcQkht4FPrF/kAbbgv9G/66G2MbAA==
 
     function process() {
@@ -147,17 +148,28 @@
             const line = turf.lineString(coords);
             const lineLength = turf.length(line, {units: 'meters'});
 
-            const totalSubSegments = 200;
-            const subSegmentLength = Math.round(lineLength/totalSubSegments);
+            let totalSubSegments = 200;
+            let subSegmentLength = Math.round(lineLength/totalSubSegments);
+
+            // don't allow subsection lengths under a meter
+            if (lineLength < totalSubSegments) {
+                totalSubSegments = Math.floor(lineLength);
+                subSegmentLength = 1;
+            }
 
             const subdividedCoords = [];
             for (let i = 0; i < totalSubSegments + 1; i++) {
                 subdividedCoords.push(
-                    turf.along(line, i * subSegmentLength, {units: 'meters'}).geometry.coordinates);
+                    turf.along(
+                        line,
+                        i * subSegmentLength,
+                        {units: 'meters'}
+                    ).geometry.coordinates);
             }
 
             const coordPairs = [];
             for (let i = 0; i < subdividedCoords.length - 1; i++) {
+                // this allows coordinate arrays with only 2 to be captures, too
                 if (i < subdividedCoords.length - 1) {
                     coordPairs.push([
                         subdividedCoords[i],
