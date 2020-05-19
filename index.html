@@ -149,7 +149,7 @@
             const lineLength = turf.length(line, {units: 'meters'});
 
             let totalSubSegments = 200;
-            let subSegmentLength = Math.round(lineLength/totalSubSegments);
+            let subSegmentLength = Math.round(lineLength/totalSubSegments*100)/100;
 
             // don't allow subsection lengths under a meter
             if (lineLength < totalSubSegments) {
