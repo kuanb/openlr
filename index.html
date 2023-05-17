@@ -250,6 +250,52 @@
                     .addTo(map);
             });
 
+
+            // add some offset circles if we got em
+            try {
+                const offsets = jsonObject.properties._offsets;
+                const noff = offsets.properties._nOffRelative;
+
+                if (map.getSource('noff_circle')) map.removeSource('noff_circle');
+                if (map.getLayer('noff_circle')) map.removeLayer('noff_circle');
+
+                map.addSource('noff_circle', {
+                    'type': 'geojson',
+                    'data': turf.circle(coords[coords.length - 1], noff, {units: 'meters'}),
+                });
+                map.addLayer({
+                    'id': 'noff_circle',
+                    'type': 'line',
+                    'source': 'noff_circle',
+                    'paint': {
+                        'line-color': '#fcfcfc',
+                        'line-width': 2
+                    }
+                });
+
+                const poff = offsets.properties._pOffRelative;
+
+                if (map.getSource('poff_circle')) map.removeSource('poff_circle');
+                if (map.getLayer('poff_circle')) map.removeLayer('poff_circle');
+
+                map.addSource('poff_circle', {
+                    'type': 'geojson',
+                    'data': turf.circle(coords[0], poff, {units: 'meters'}),
+                });
+                map.addLayer({
+                    'id': 'poff_circle',
+                    'type': 'line',
+                    'source': 'poff_circle',
+                    'paint': {
+                        'line-color': '#fcfcfc',
+                        'line-width': 2
+                    }
+                });
+
+            } catch (err) {
+                console.log(err)
+            } 
+
             const bounds = coords.reduce((bounds, coord) => {
                 return bounds.extend(coord);
             }, new mapboxgl.LngLatBounds(coords[0], coords[0]));
