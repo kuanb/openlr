@@ -142,8 +142,8 @@
             const jsonObject = OpenLR.Serializer.serialize(rawLocationReference);
 
             // estimate total OpenLR length
-            const segment_dists = jsonObject.properties._points.properties.map(p => p.properties._distanceToNext)
-            const total_length = segment_dists.reduce((part_sum, a) => part_sum + a, 0);
+            const segmentDistances = jsonObject.properties._points.properties.map(p => p.properties._distanceToNext)
+            const totalPathLength = segmentDistances.reduce((part_sum, a) => part_sum + a, 0);
 
             const coordsAndBearings = jsonObject.properties._points.properties.map(
                 x => [x.properties._longitude, x.properties._latitude, x.properties._bearing]);
@@ -265,38 +265,54 @@
                 if (map.getSource('noff_circle')) map.removeSource('noff_circle');
                 if (map.getLayer('noff_circle')) map.removeLayer('noff_circle');
 
-                map.addSource('noff_circle', {
-                    'type': 'geojson',
-                    'data': turf.circle(coords[coords.length - 1], ((noff / 100) * total_length), {units: 'meters'}),
-                });
-                map.addLayer({
-                    'id': 'noff_circle',
-                    'type': 'line',
-                    'source': 'noff_circle',
-                    'paint': {
-                        'line-color': '#fcfcfc',
-                        'line-width': 2
-                    }
-                });
+                if (noff) {
+                    const noffPoint = turf.along(line, (noff / 100) * lineLength, {units: 'meters'});
+
+                    map.addSource('noff_circle', {
+                        'type': 'geojson',
+                        'data': noffPoint,
+                    });
+                    map.addLayer({
+                        'id': 'noff_circle',
+                        'type': 'symbol',
+                        'source': 'noff_circle',
+                        'layout': {
+                            'text-field': 'x\nnegative offset',
+                            'text-size': 18,
+                            'text-anchor': 'top'
+                        },
+                        'paint': {
+                            'text-color': '#ffffff'
+                        }
+                    });
+                }
 
                 const poff = offsets.properties._pOffRelative;
 
                 if (map.getSource('poff_circle')) map.removeSource('poff_circle');
                 if (map.getLayer('poff_circle')) map.removeLayer('poff_circle');
 
-                map.addSource('poff_circle', {
-                    'type': 'geojson',
-                    'data': turf.circle(coords[0], (poff / 100) * total_length, {units: 'meters'}),
-                });
-                map.addLayer({
-                    'id': 'poff_circle',
-                    'type': 'line',
-                    'source': 'poff_circle',
-                    'paint': {
-                        'line-color': '#fcfcfc',
-                        'line-width': 2
-                    }
-                });
+                if (poff) {
+                    const poffPoint = turf.along(line, (poff / 100) * lineLength, {units: 'meters'});
+
+                    map.addSource('poff_circle', {
+                        'type': 'geojson',
+                        'data': poffPoint,
+                    });
+                    map.addLayer({
+                        'id': 'poff_circle',
+                        'type': 'symbol',
+                        'source': 'poff_circle',
+                        'layout': {
+                            'text-field': 'x\npositive offset',
+                            'text-size': 18,
+                            'text-anchor': 'top'
+                        },
+                        'paint': {
+                            'text-color': '#ffffff'
+                        }
+                    });
+                }
 
             } catch (err) {
                 console.log(err)
