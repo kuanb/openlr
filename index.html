@@ -141,6 +141,10 @@
             const rawLocationReference = binaryDecoder.decodeData(locationReference);
             const jsonObject = OpenLR.Serializer.serialize(rawLocationReference);
 
+            // estimate total OpenLR length
+            const segment_dists = jsonObject.properties._points.properties.map(p => p.properties._distanceToNext)
+            const total_length = segment_dists.reduce((part_sum, a) => part_sum + a, 0);
+
             const coordsAndBearings = jsonObject.properties._points.properties.map(
                 x => [x.properties._longitude, x.properties._latitude, x.properties._bearing]);
             const coords = coordsAndBearings.map(cab => [cab[0], cab[1]]);
@@ -194,6 +198,8 @@
 
                 }),
             }
+
+            
 
             if (map.getLayer("route")) {
                 map.removeLayer("route");
@@ -261,7 +267,7 @@
 
                 map.addSource('noff_circle', {
                     'type': 'geojson',
-                    'data': turf.circle(coords[coords.length - 1], noff, {units: 'meters'}),
+                    'data': turf.circle(coords[coords.length - 1], ((noff / 100) * total_length), {units: 'meters'}),
                 });
                 map.addLayer({
                     'id': 'noff_circle',
@@ -280,7 +286,7 @@
 
                 map.addSource('poff_circle', {
                     'type': 'geojson',
-                    'data': turf.circle(coords[0], poff, {units: 'meters'}),
+                    'data': turf.circle(coords[0], (poff / 100) * total_length, {units: 'meters'}),
                 });
                 map.addLayer({
                     'id': 'poff_circle',
