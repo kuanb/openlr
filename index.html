@@ -266,7 +266,11 @@
                 if (map.getLayer('noff_circle')) map.removeLayer('noff_circle');
 
                 if (noff) {
-                    const noffPoint = turf.along(line, (noff / 100) * lineLength, {units: 'meters'});
+                    const lastTwoCoords = [coords[-2], coords[-1]]
+                    const lastSegLine = turf.lineString([coords[-2], coords[-1]]);
+                    const lastSegLineLength = turf.length(lastSegLine, {units: 'meters'});
+
+                    const noffPoint = turf.along(lastSegLine, (noff / 100) * lastSegLineLength, {units: 'meters'});
 
                     map.addSource('noff_circle', {
                         'type': 'geojson',
@@ -293,7 +297,10 @@
                 if (map.getLayer('poff_circle')) map.removeLayer('poff_circle');
 
                 if (poff) {
-                    const poffPoint = turf.along(line, (poff / 100) * lineLength, {units: 'meters'});
+                    const firstSegLine = turf.lineString([coords[0], coords[1]]);
+                    const firstSegLineLength = turf.length(firstSegLine, {units: 'meters'});
+
+                    const poffPoint = turf.along(firstSegLine, (poff / 100) * firstSegLineLength, {units: 'meters'});
 
                     map.addSource('poff_circle', {
                         'type': 'geojson',
