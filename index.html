@@ -199,8 +199,6 @@
                 }),
             }
 
-            
-
             if (map.getLayer("route")) {
                 map.removeLayer("route");
             }
@@ -262,12 +260,12 @@
                 const offsets = jsonObject.properties._offsets;
                 const noff = offsets.properties._nOffRelative;
 
-                if (map.getSource('noff_circle')) map.removeSource('noff_circle');
                 if (map.getLayer('noff_circle')) map.removeLayer('noff_circle');
+                if (map.getSource('noff_circle')) map.removeSource('noff_circle');
 
                 if (noff) {
                     const lastTwoCoords = [coords[-2], coords[-1]]
-                    const lastSegLine = turf.lineString([coords[-2], coords[-1]]);
+                    const lastSegLine = turf.lineString([coords[coords.length - 2], coords[coords.length - 1]]);
                     const lastSegLineLength = turf.length(lastSegLine, {units: 'meters'});
 
                     const noffPoint = turf.along(lastSegLine, (noff / 100) * lastSegLineLength, {units: 'meters'});
@@ -293,8 +291,8 @@
 
                 const poff = offsets.properties._pOffRelative;
 
-                if (map.getSource('poff_circle')) map.removeSource('poff_circle');
                 if (map.getLayer('poff_circle')) map.removeLayer('poff_circle');
+                if (map.getSource('poff_circle')) map.removeSource('poff_circle');
 
                 if (poff) {
                     const firstSegLine = turf.lineString([coords[0], coords[1]]);
@@ -328,7 +326,7 @@
             const bounds = coords.reduce((bounds, coord) => {
                 return bounds.extend(coord);
             }, new mapboxgl.LngLatBounds(coords[0], coords[0]));
-             
+
             map.fitBounds(bounds, { padding: 100 });
 
         } catch(error) {
