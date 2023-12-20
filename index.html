@@ -95,9 +95,8 @@
 
 <body>
 
-    <div id="form">
+    <div id="form" onkeypress="openLRSubmit(event)">
         <input type="text" id="openlrInput" name="openlrInput" placeholder="openlr string  here"></input>
-        <button type="submit" onclick="process()">Submit</button>
     </div>
 
     <div id="map"></div>
@@ -125,11 +124,27 @@
     });
     map.dragRotate.disable();
 
+    map.on("load", function () {
+        const params = new URLSearchParams(window.location.search);
+        const openLrString = params.get("id");
+        if (openLrString) {
+            document.getElementById('openlrInput').value = openLrString;
+            process();
+        }
+    });
+
     // Example OpenLRs
     // CwNhbCU+jzPLAwD0/34zGw==
     // CwUVTSRzcRNIBQHJ/9MUfAAA
     // CxRySyt/9SujAAA/AB4rFA==
     // C/8G3CcQkht4FPrF/kAbbgv9G/66G2MbAA==
+    // Cwc2vSIg/gEGAwDWAEIBdUUA (has a negative and positive offset)
+
+    function openLRSubmit(event) {
+        if (event.key == "Enter") {
+            process();
+        }
+    }
 
     function process() {
         try {
@@ -268,7 +283,7 @@
                     const lastSegLine = turf.lineString([coords[coords.length - 2], coords[coords.length - 1]]);
                     const lastSegLineLength = turf.length(lastSegLine, {units: 'meters'});
 
-                    const noffPoint = turf.along(lastSegLine, (noff / 100) * lastSegLineLength, {units: 'meters'});
+                    const noffPoint = turf.along(lastSegLine, (1 - (noff / 100)) * lastSegLineLength, {units: 'meters'});
 
                     map.addSource('noff_circle', {
                         'type': 'geojson',
@@ -327,6 +342,7 @@
                 return bounds.extend(coord);
             }, new mapboxgl.LngLatBounds(coords[0], coords[0]));
 
+            updateURL(openLrString);
             map.fitBounds(bounds, { padding: 100 });
 
         } catch(error) {
@@ -334,6 +350,17 @@
             showSnackbar();
         }
 
+    }
+
+    function updateURL(olrString) {
+        const params = new URLSearchParams(window.location.search);
+        let path = window.location.pathname;
+        if (path.charAt(path.length - 1) !== "/") {
+            path += "/";
+        }
+
+        let paramsString = `${path}?id=${olrString}`;
+        window.history.pushState({}, "new-openlr-update", paramsString);
     }
 
     function showSnackbar() {
