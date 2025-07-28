@@ -204,7 +204,6 @@
                         'type': 'Feature',
                         'properties': {
                             'color': d3.interpolateCool(i/totalSubSegments),
-                            'tolerance': 0,
                         },
                         'geometry': {
                             'type': 'LineString',
@@ -226,6 +225,7 @@
             map.addSource('route', {
                 'type': 'geojson',
                 'data': geojson,
+                'tolerance': 0,
             });
             map.addLayer({
                 'id': 'route',
