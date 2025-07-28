@@ -151,6 +151,7 @@
             const binaryDecoder = new OpenLR.BinaryDecoder();
 
             const openLrString = document.getElementById('openlrInput').value;
+            console.log(`parsing openlr=${openLrString}`);
             const openLrBinary = OpenLR.Buffer.from(openLrString, 'base64');
             const locationReference = OpenLR.LocationReference.fromIdAndBuffer('binary', openLrBinary);
             const rawLocationReference = binaryDecoder.decodeData(locationReference);
@@ -167,34 +168,15 @@
             const line = turf.lineString(coords);
             const lineLength = turf.length(line, {units: 'meters'});
 
-            let totalSubSegments = 200;
-            let subSegmentLength = Math.round(lineLength/totalSubSegments*100)/100;
-
-            // don't allow subsection lengths under a meter
-            if (lineLength < totalSubSegments) {
-                totalSubSegments = Math.floor(lineLength);
-                subSegmentLength = 1;
-            }
-
-            const subdividedCoords = [];
-            for (let i = 0; i < totalSubSegments + 1; i++) {
-                subdividedCoords.push(
-                    turf.along(
-                        line,
-                        i * subSegmentLength,
-                        {units: 'meters'}
-                    ).geometry.coordinates);
-            }
+            // Create subdivided coordinates while preserving original points
+            const subdividedCoords = createSubdividedCoordsWithPreservedPoints(line, coords, lineLength);
 
             const coordPairs = [];
             for (let i = 0; i < subdividedCoords.length - 1; i++) {
-                // this allows coordinate arrays with only 2 to be captures, too
-                if (i < subdividedCoords.length - 1) {
-                    coordPairs.push([
-                        subdividedCoords[i],
-                        subdividedCoords[i + 1]
-                    ]);
-                }
+                coordPairs.push([
+                    subdividedCoords[i],
+                    subdividedCoords[i + 1]
+                ]);
             }
 
             const geojson = {
@@ -203,14 +185,13 @@
                     return {
                         'type': 'Feature',
                         'properties': {
-                            'color': d3.interpolateCool(i/totalSubSegments),
+                            'color': d3.interpolateCool(i / (subdividedCoords.length - 1)),
                         },
                         'geometry': {
                             'type': 'LineString',
                             'coordinates': cp,
                         },
                     }
-
                 }),
             }
 
@@ -225,8 +206,7 @@
             map.addSource('route', {
                 'type': 'geojson',
                 'data': geojson,
-                'tolerance': 0,
-                'buffer': 0,
+                'buffer': 512,
             });
             map.addLayer({
                 'id': 'route',
@@ -270,7 +250,6 @@
                     )
                     .addTo(map);
             });
-
 
             // add some offset circles if we got em
             try {
@@ -351,7 +330,71 @@
             console.log(error);
             showSnackbar();
         }
+    }
 
+    function createSubdividedCoordsWithPreservedPoints(line, originalCoords, lineLength) {
+        const targetSubSegments = 200;
+        let subSegmentLength = Math.round(lineLength / targetSubSegments * 100) / 100;
+
+        // don't allow subsection lengths under a meter
+        if (lineLength < targetSubSegments) {
+            subSegmentLength = 1;
+        }
+
+        // Calculate distances of original coordinates along the line
+        const originalCoordsWithDistances = [];
+        let cumulativeDistance = 0;
+        
+        originalCoordsWithDistances.push({
+            coord: originalCoords[0],
+            distance: 0
+        });
+
+        for (let i = 1; i < originalCoords.length; i++) {
+            const segmentLine = turf.lineString([originalCoords[i-1], originalCoords[i]]);
+            const segmentLength = turf.length(segmentLine, {units: 'meters'});
+            cumulativeDistance += segmentLength;
+            
+            originalCoordsWithDistances.push({
+                coord: originalCoords[i],
+                distance: cumulativeDistance
+            });
+        }
+
+        // Create all potential subdivision points
+        const allPoints = new Map(); // Use Map to avoid duplicates by distance key
+
+        // Add original coordinates
+        originalCoordsWithDistances.forEach(item => {
+            const key = Math.round(item.distance * 1000) / 1000; // Round to mm precision
+            allPoints.set(key, {
+                coord: item.coord,
+                distance: item.distance,
+                isOriginal: true
+            });
+        });
+
+        // Add evenly spaced points
+        const totalSegments = Math.min(targetSubSegments, Math.floor(lineLength / subSegmentLength));
+        for (let i = 0; i <= totalSegments; i++) {
+            const distance = i * subSegmentLength;
+            const key = Math.round(distance * 1000) / 1000; // Round to mm precision
+            
+            if (!allPoints.has(key)) {
+                const point = turf.along(line, distance, {units: 'meters'});
+                allPoints.set(key, {
+                    coord: point.geometry.coordinates,
+                    distance: distance,
+                    isOriginal: false
+                });
+            }
+        }
+
+        // Sort by distance and extract coordinates
+        const sortedPoints = Array.from(allPoints.values())
+            .sort((a, b) => a.distance - b.distance);
+
+        return sortedPoints.map(point => point.coord);
     }
 
     function updateURL(olrString) {
@@ -361,7 +404,8 @@
             path += "/";
         }
 
-        let paramsString = `${path}?id=${olrString}`;
+        const encodedValue = encodeURIComponent(olrString);
+        let paramsString = `${path}?id=${encodedValue}`;
         window.history.pushState({}, "new-openlr-update", paramsString);
     }
 
