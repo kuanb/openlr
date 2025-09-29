@@ -324,7 +324,7 @@
             }, new mapboxgl.LngLatBounds(coords[0], coords[0]));
 
             updateURL(openLrString);
-            map.fitBounds(bounds, { padding: 100 });
+            map.fitBounds(bounds, { duration: 0, padding: 100 });
 
         } catch(error) {
             console.log(error);
