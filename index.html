@@ -84,6 +84,43 @@
         #form button:active {
             background-color: #2a6099;
         }
+        #mapMatchBtn {
+            background-color: #2db5a0;
+        }
+        #mapMatchBtn:hover {
+            background-color: #249e8b;
+        }
+        #mapMatchBtn:active {
+            background-color: #1d8475;
+        }
+        #mapMatchBtn.loading {
+            opacity: 0.6;
+            cursor: wait;
+        }
+        #matchInfo {
+            position: absolute;
+            bottom: 50px;
+            left: 15px;
+            z-index: 1;
+            background-color: rgba(255, 255, 255, 0.95);
+            padding: 10px 14px;
+            border-radius: 8px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.25);
+            font-family: Helvetica, Arial, sans-serif;
+            font-size: 12px;
+            color: #333;
+            display: none;
+            max-width: 320px;
+        }
+        #matchInfo .match-title {
+            font-weight: 700;
+            font-size: 13px;
+            margin-bottom: 4px;
+            color: #2db5a0;
+        }
+        #matchInfo .match-row {
+            margin: 2px 0;
+        }
         #header {
             position: absolute;
             top: 15px;
@@ -166,6 +203,7 @@
         <label for="openlrInput">OpenLR</label>
         <input type="text" id="openlrInput" name="openlrInput" placeholder="paste encoded string, press Enter">
         <button onclick="process()">Go</button>
+        <button id="mapMatchBtn" onclick="mapMatch()">Map Match</button>
     </div>
 
     <div id="map"></div>
@@ -174,6 +212,7 @@
         <p style="float: right;">End</p>
     </div>
 
+    <div id="matchInfo"></div>
     <div id='snackbar'>Failed to parse OpenLR.</div>
 
 </body>
@@ -182,9 +221,10 @@
 <script src="https://cdn.jsdelivr.net/npm/openlr-js@3.0.6/lib/browser/bundle.min.js"></script>
 <script src='https://npmcdn.com/@turf/turf/turf.min.js'></script>
 <script src="https://d3js.org/d3.v5.js"></script>
+<script src="config.js"></script>
 
 <script type="text/javascript">
-    mapboxgl.accessToken = 'pk.eyJ1Ijoia3VhbmIiLCJhIjoidXdWUVZ2USJ9.qNKXXP6z9_fKA8qrmpOi6Q';
+    mapboxgl.accessToken = MAPBOX_ACCESS_TOKEN;
     var map = new mapboxgl.Map({
         container: 'map', // container id
         style: 'mapbox://styles/mapbox/dark-v10', // stylesheet location
@@ -466,6 +506,91 @@
         return sortedPoints.map(point => point.coord);
     }
 
+    function clearMatchLayer() {
+        if (map.getLayer('matchRoute')) map.removeLayer('matchRoute');
+        if (map.getSource('matchRoute')) map.removeSource('matchRoute');
+        document.getElementById('matchInfo').style.display = 'none';
+    }
+
+    async function mapMatch() {
+        const openLrString = document.getElementById('openlrInput').value.trim();
+        if (!openLrString) {
+            showSnackbar('No OpenLR string provided.');
+            return;
+        }
+
+        const btn = document.getElementById('mapMatchBtn');
+        btn.classList.add('loading');
+        btn.disabled = true;
+
+        try {
+            const encodedOlr = encodeURIComponent(openLrString);
+            const url = `https://api.mapbox.com/matching/v5/mapbox/driving/${encodedOlr}.json`
+                + `?openlr_spec=tomtom&openlr_format=tomtom`
+                + `&geometries=geojson&overview=full`
+                + `&access_token=${mapboxgl.accessToken}`;
+
+            const response = await fetch(url);
+            const data = await response.json();
+
+            if (data.code !== 'Ok' || !data.matchings || data.matchings.length === 0) {
+                showSnackbar(data.message || `Map matching failed: ${data.code}`);
+                return;
+            }
+
+            const matching = data.matchings[0];
+            const geojson = {
+                'type': 'Feature',
+                'geometry': matching.geometry,
+                'properties': {}
+            };
+
+            clearMatchLayer();
+
+            map.addSource('matchRoute', {
+                'type': 'geojson',
+                'data': geojson,
+            });
+            map.addLayer({
+                'id': 'matchRoute',
+                'type': 'line',
+                'source': 'matchRoute',
+                'layout': {
+                    'line-join': 'round',
+                    'line-cap': 'round'
+                },
+                'paint': {
+                    'line-color': '#2db5a0',
+                    'line-width': 5,
+                    'line-opacity': 0.85,
+                    'line-dasharray': [2, 2]
+                }
+            });
+
+            const coords = matching.geometry.coordinates;
+            const bounds = coords.reduce((b, coord) => {
+                return b.extend(coord);
+            }, new mapboxgl.LngLatBounds(coords[0], coords[0]));
+            map.fitBounds(bounds, { duration: 0, padding: 100 });
+
+            const infoEl = document.getElementById('matchInfo');
+            infoEl.innerHTML = `
+                <div class="match-title">Map Match Result</div>
+                <div class="match-row"><strong>Confidence:</strong> ${(matching.confidence * 100).toFixed(1)}%</div>
+                <div class="match-row"><strong>Distance:</strong> ${(matching.distance).toFixed(1)} m</div>
+                <div class="match-row"><strong>Duration:</strong> ${(matching.duration).toFixed(1)} s</div>
+            `;
+            infoEl.style.display = 'block';
+
+        } catch (err) {
+            console.error(err);
+            showSnackbar('Map matching request failed.');
+        } finally {
+            btn.classList.remove('loading');
+            btn.disabled = false;
+        }
+    }
+
     function updateURL(olrString) {
         const params = new URLSearchParams(window.location.search);
         let path = window.location.pathname;
@@ -478,8 +603,10 @@
         window.history.pushState({}, "new-openlr-update", paramsString);
     }
 
-    function showSnackbar() {
+    function showSnackbar(msg) {
         var x = document.getElementById('snackbar');
+        if (msg) x.textContent = msg;
+        else x.textContent = 'Failed to parse OpenLR.';
         x.className = 'show';
         setTimeout(function(){ x.className = x.className.replace('show', ''); }, 2000);
     }

@@ -1,0 +1,1 @@
+var MAPBOX_ACCESS_TOKEN = 'pk.eyJ1Ijoia3VhbmIiLCJhIjoiY21ueXV1Y3V4MDV2MTJwb25weDNuM3ZtMyJ9.Gwv_egCtvbxpcaH4Ku7sgQ';
