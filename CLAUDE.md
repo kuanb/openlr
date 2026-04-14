@@ -6,13 +6,22 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Static single-page web application that visualizes OpenLR (Open Location Reference) encoded geographic locations. Decodes binary OpenLR strings into coordinates and bearing angles, then renders them on an interactive Mapbox GL map with gradient coloring, bearing arrows, and offset indicators.
 
-Deployed as a GitHub Pages site from the `gh-pages` branch.
+Deployed as a GitHub Pages site. Development happens on `main`; a GitHub Actions workflow generates `config.js` (with the Mapbox token from the `MB_TOKEN` repo secret) and pushes deploy artifacts to the `gh-pages` branch.
 
 ## Development
 
 No build process, package manager, or test framework. The entire app is a single `index.html` with embedded JavaScript, styled by `arrowstyle.css`, using CDN-loaded dependencies.
 
-To develop: serve `index.html` over HTTP (e.g., `python3 -m http.server`) and open in a browser.
+### Local setup
+
+1. Copy `.env.example` to `.env` and fill in your Mapbox access token
+2. Generate `config.js` from your `.env`:
+   ```
+   echo "var MAPBOX_ACCESS_TOKEN = '$(grep MAPBOX_ACCESS_TOKEN .env | cut -d= -f2)';" > config.js
+   ```
+3. Serve `index.html` over HTTP (e.g., `python3 -m http.server`) and open in a browser
+
+Both `.env` and `config.js` are gitignored. In CI, `config.js` is generated from the `MB_TOKEN` GitHub repo secret.
 
 ## Dependencies (all CDN-loaded)
 
