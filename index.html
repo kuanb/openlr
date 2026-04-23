@@ -145,6 +145,25 @@
         .mapboxgl-popup-content {
             text-align: center;
         }
+        .streetview-popup .mapboxgl-popup-content {
+            padding: 8px 10px;
+            font-family: Helvetica, Arial, sans-serif;
+            font-size: 12px;
+        }
+        .streetview-popup a {
+            color: #4a90d9;
+            font-weight: 600;
+            text-decoration: none;
+        }
+        .streetview-popup a:hover {
+            text-decoration: underline;
+        }
+        .streetview-popup .sv-coords {
+            color: #666;
+            font-size: 11px;
+            margin-top: 2px;
+            font-family: 'SF Mono', 'Menlo', 'Consolas', monospace;
+        }
         #snackbar {
             visibility: hidden; /* Hidden by default. Visible on click */
             min-width: 250px;
@@ -331,6 +350,8 @@
                 }
             });
 
+            attachStreetViewHover();
+
             // remove markers from map if any exist
             [...Array(360).keys()].map(i => {
                 const elements = document.getElementsByClassName(`arrowmarker${i}`);
@@ -504,6 +525,74 @@
             .sort((a, b) => a.distance - b.distance);
 
         return sortedPoints.map(point => point.coord);
+    }
+
+    let streetViewPopup = null;
+    let streetViewCloseTimer = null;
+    let streetViewHoverAttached = false;
+
+    function attachStreetViewHover() {
+        if (streetViewHoverAttached) return;
+        streetViewHoverAttached = true;
+
+        const cancelClose = () => {
+            if (streetViewCloseTimer) {
+                clearTimeout(streetViewCloseTimer);
+                streetViewCloseTimer = null;
+            }
+        };
+
+        const scheduleClose = () => {
+            cancelClose();
+            streetViewCloseTimer = setTimeout(() => {
+                if (streetViewPopup) {
+                    streetViewPopup.remove();
+                    streetViewPopup = null;
+                }
+            }, 250);
+        };
+
+        map.on('mouseenter', 'route', () => {
+            map.getCanvas().style.cursor = 'pointer';
+        });
+
+        map.on('mousemove', 'route', (e) => {
+            cancelClose();
+            const lng = e.lngLat.lng;
+            const lat = e.lngLat.lat;
+            const svUrl = `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${lat},${lng}`;
+            const html = `
+                <div>
+                    <a href="${svUrl}" target="_blank" rel="noopener noreferrer">Open in Street View ↗</a>
+                    <div class="sv-coords">${lat.toFixed(6)}, ${lng.toFixed(6)}</div>
+                </div>
+            `;
+
+            if (!streetViewPopup) {
+                streetViewPopup = new mapboxgl.Popup({
+                    closeButton: false,
+                    closeOnClick: false,
+                    offset: 12,
+                    className: 'streetview-popup',
+                })
+                    .setLngLat(e.lngLat)
+                    .setHTML(html)
+                    .addTo(map);
+
+                const popupEl = streetViewPopup.getElement();
+                if (popupEl) {
+                    popupEl.addEventListener('mouseenter', cancelClose);
+                    popupEl.addEventListener('mouseleave', scheduleClose);
+                }
+            } else {
+                streetViewPopup.setLngLat(e.lngLat).setHTML(html);
+            }
+        });
+
+        map.on('mouseleave', 'route', () => {
+            map.getCanvas().style.cursor = '';
+            scheduleClose();
+        });
     }
 
     function clearMatchLayer() {
