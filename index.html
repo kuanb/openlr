@@ -158,6 +158,10 @@
         .streetview-popup a:hover {
             text-decoration: underline;
         }
+        .streetview-popup .sv-sep {
+            color: #aaa;
+            margin: 0 4px;
+        }
         .streetview-popup .sv-coords {
             color: #666;
             font-size: 11px;
@@ -561,9 +565,12 @@
             const lng = e.lngLat.lng;
             const lat = e.lngLat.lat;
             const svUrl = `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${lat},${lng}`;
+            const osmUrl = `https://www.openstreetmap.org/query?lat=${lat}&lon=${lng}#map=19/${lat}/${lng}`;
             const html = `
                 <div>
-                    <a href="${svUrl}" target="_blank" rel="noopener noreferrer">Open in Street View ↗</a>
+                    <a href="${svUrl}" target="_blank" rel="noopener noreferrer">Street View ↗</a>
+                    <span class="sv-sep">·</span>
+                    <a href="${osmUrl}" target="_blank" rel="noopener noreferrer">OSM ↗</a>
                     <div class="sv-coords">${lat.toFixed(6)}, ${lng.toFixed(6)}</div>
                 </div>
             `;
