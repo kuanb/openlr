@@ -5,10 +5,19 @@ on:
     branches: [main]
 
 permissions:
-  contents: write
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
 
 jobs:
   deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -17,9 +26,24 @@ jobs:
         run: |
           echo "var MAPBOX_ACCESS_TOKEN = '${{ secrets.MB_TOKEN }}';" > config.js
 
-      - name: Deploy to gh-pages
-        uses: peaceiris/actions-gh-pages@v4
+      - name: Stage site
+        run: |
+          mkdir -p _site
+          rsync -a \
+            --exclude='.git' \
+            --exclude='.github' \
+            --exclude='.gitignore' \
+            --exclude='.env*' \
+            --exclude='.claude' \
+            --exclude='CLAUDE.md' \
+            --exclude='_site' \
+            ./ _site/
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: .
-          exclude_assets: '.github,.gitignore,.env*,.claude,CLAUDE.md'
+          path: _site
+
+      - id: deployment
+        uses: actions/deploy-pages@v4

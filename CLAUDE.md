@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Static single-page web application that visualizes OpenLR (Open Location Reference) encoded geographic locations. Decodes binary OpenLR strings into coordinates and bearing angles, then renders them on an interactive Mapbox GL map with gradient coloring, bearing arrows, and offset indicators.
 
-Deployed as a GitHub Pages site. Development happens on `main`; a GitHub Actions workflow generates `config.js` (with the Mapbox token from the `MB_TOKEN` repo secret) and pushes deploy artifacts to the `gh-pages` branch.
+Deployed as a GitHub Pages site. Development happens on `main`; a GitHub Actions workflow generates `config.js` (with the Mapbox token from the `MB_TOKEN` repo secret) and deploys directly via the official GitHub Pages actions (`upload-pages-artifact` + `deploy-pages`). Repo Pages source must be set to "GitHub Actions".
 
 ## Development
 
